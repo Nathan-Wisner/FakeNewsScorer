@@ -38,7 +38,7 @@ data = res.read()
 print(data.decode("utf-8"))
 
 
-# In[144]:
+# In[155]:
 
 import http.client
 import json
@@ -51,16 +51,18 @@ headers = {
     }
 
 def categorizeScore(score, median):
-    if(score < median - (median) * .05):
+    if(score < median - (median) * .03):
         return "Likely True"
-    if (score > median - (median * .1) and score < median + (median * .05)):
+    if (score > median - (median * .01) and score < median):
         return "Possibly True"
-    if (score > median + (median) and score < median + (median * .05)):
+    if (score > median + (median) and score < median + (median * .01)):
         return "Possibly False"
-    if (score > median + (median * .05) and score < median + (median * .1)):
+    if (score > median + (median * .02) and score < median + (median * .4)):
         return "Likely False"
-    else:
+    elif (score < median + (median * .4)):
         return "Very Likely False"
+    else:
+        return "False"
 
 def getMean(JSON):
     counter = 0
@@ -77,6 +79,7 @@ def printScores(JSON):
     for item in JSON["articles"]:
         print(item["title"])
         print(categorizeScore(item["score"], mean))
+        print()
         #print(item["score"])
 
 def getHeadlineScore(title):
@@ -92,7 +95,7 @@ def getHeadlineScore(title):
     JSON = json.loads(data.decode("utf-8"))
     getMean(JSON)
     printScores(JSON)
-getHeadlineScore("Obama")
+getHeadlineScore("Moon landing")
 
 
 # In[94]:
