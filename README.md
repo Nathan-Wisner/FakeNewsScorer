@@ -33,7 +33,7 @@ from the site. More importnatly, the website is inteded to display analytics on 
 The backend is running off NodeJS, Mongoose, and Express but wasn't fully implemented. Additional time was spent deploying the website 
 onto AWS 
 
-### Deployment
+## Deployment
 
 Python Scripts folder and Twitter Bot: Running locally backed by a SQLite database.
 ReactJS website: Deployed suceesfully onto AWS
