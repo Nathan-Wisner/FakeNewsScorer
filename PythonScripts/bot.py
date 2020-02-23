@@ -7,7 +7,7 @@ from io import StringIO
 import csv
 import sqlite3
 from sqlite3 import Error
-from Hoaxy import getScore
+from Hoaxy import getScore, createDescriptUpdate, getDomain
 from newspaper import Article
 
 # Authenticate to Twitter and create API object
@@ -56,6 +56,10 @@ def getHeadlineFromUrl(url):
     article.parse()
     return article.title
 
+def printDescList(newDict):
+    list = newDict["fakeDescription"]
+    return list
+
 def runBot():
     while True:
         mentions = api.mentions_timeline()
@@ -71,9 +75,14 @@ def runBot():
             insertID(tweet_id)
 
             scoring = getScore(expanded)
-            api.update_status('Article has a ' + str(scoring) + '% chance of being false ' + expanded)
+            domain = getDomain(expanded)
+            description = createDescriptUpdate(expanded)
 
-            print(tweet_id)
+            if "fakeDescription" in description:
+                api.update_status('Article has a ' + str(scoring) + '% chance of being false ' + expanded + " \n \n This may be because " + domain + " is known for " + str(printDescList(description)))
+            else:
+                api.update_status('Article has a ' + str(scoring) + '% chance of being false ' + expanded)
+                print(tweet_id)
             print(expanded)
         else:
             print("ID %d already seen", tweet_id)

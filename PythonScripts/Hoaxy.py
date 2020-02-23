@@ -160,8 +160,8 @@ def getVerifyScore(headline, URL):
 def getScore(URL):
     headline = getHeadline(URL)
     verifyScore = getVerifyScore(headline, URL)
-    hoaxyScore = getHeadlineScore(headline)
+    #hoaxyScore = getHeadlineScore(headline)
     print(verifyScore)
-    print(hoaxyScore)
+    #print(hoaxyScore)
 
     return verifyScore

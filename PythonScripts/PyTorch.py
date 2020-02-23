@@ -8,6 +8,14 @@ from torch.utils.data import DataLoader
 import time
 from torch.utils.data.dataset import random_split
 
+import numpy as np
+from sklearn.datasets import make_classification
+from torch import nn
+import torch.nn.functional as F
+from skorch import NeuralNetClassifier
+import re
+
+import spacy
 import torch
 import torchtext
 from torchtext.datasets import text_classification
@@ -35,17 +43,22 @@ def parseFiles():
     gosiFake = pd.read_csv("gossipcop_fake.csv")
     gosiReal = pd.read_csv("gossipcop_real.csv")
 
-    pRealFrame = poliReal[['news_url', 'title', 'tweet_ids']]
-    pFakeFrame = poliFake[['news_url', 'title', 'tweet_ids']]
-    gFakeFrame = gosiFake[['news_url', 'title', 'tweet_ids']]
-    gRealFrame = gosiReal[['news_url', 'title', 'tweet_ids']]
-    newsFrame = newsFake[['url', 'title', 'type']]
+    pRealFrame = poliReal[['title']]
+    pFakeFrame = poliFake[['title']]
+    gFakeFrame = gosiFake[['title']]
+    gRealFrame = gosiReal[['title']]
+    newsFrame = newsFake[['title']]
+    newsType = newsFake[['type']]
+
+    global pRealList, pFakeList, gRealList, gFakeList, newsList
+
 
     pRealList = pRealFrame.values.tolist()
     pFakeList = pFakeFrame.values.tolist()
     gRealList = gRealFrame.values.tolist()
     gFakeList = gFakeFrame.values.tolist()
     newsList = newsFrame.values.tolist()
+    newsTypeList = newsType.values.tolist()
 
     createList(pRealList, pRealTrain)
     createList(pFakeList, pFakeTrain)
@@ -61,36 +74,62 @@ def parseFiles():
 
     global pList, gList
     pList = pRealList + pFakeList
+    return pList
     gList = gRealList + gFakeList
 
 
 def createList(list, trainList):
-    for item in list:
-        trainList.append([item[0], item[1]])
+    trainList = list
 
 
 def printSize(list):
     print(len(list))
 
 
-parseFiles()
-pTrainList, pTestList = torch.utils.data.random_split(pList, [756, 300])
-printSize(gList)
-train_dataset, test_dataset = torch.utils.data.random_split(gList, [18000, 4140])
+def forward(x):
+    x = x.view(x.size(0), -1)
+    x = self.encoder(x)
+    x = self.decoder(x)
+    return x
+
+testList = parseFiles()
+
+from sklearn.model_selection import GridSearchCV
 
 
-import numpy as np
-from sklearn.datasets import make_classification
-from torch import nn
-import torch.nn.functional as F
-from skorch import NeuralNetClassifier
 
 
-X, y = make_classification(1000, 20, n_informative=10, random_state=0)
-print(X)
-print(y)
+# Load the spacy model that you have installed
+nlp = spacy.load('en_core_web_md')
+# process a sentence using the model
+
+pDoc = nlp(str(testList))
+
+# It's that simple - all of the vectors and words are assigned after this point
+# Get the vector for 'text':
+print(pDoc[0])
+# Get the mean vector for the entire sentence (useful for sentence classification etc.
+
+#X, y = make_classification(1000, 20, n_informative=10, random_state=0)
+print(pDoc)
+
+"""
+X = np.array(pDoc[1].vector)
+
+yList = []
+for item in X:
+    yList.append(1)
+y = np.array(yList)
+
+X = forward(X)
 X = X.astype(np.float32)
 y = y.astype(np.int64)
+"""
+
+X, y = make_classification(1000, 20, n_informative=10, random_state=0)
+X = X.astype(np.float32)
+y = y.astype(np.int64)
+
 
 class MyModule(nn.Module):
     def __init__(self, num_units=10, nonlin=F.relu):
@@ -118,5 +157,12 @@ net = NeuralNetClassifier(
     iterator_train__shuffle=True,
 )
 
-net.fit(X, y)
-y_proba = net.predict_proba(X)
+params = {
+    'lr': [0.01, 0.02],
+    'max_epochs': [10, 20],
+    'module__num_units': [10, 20],
+}
+gs = GridSearchCV(net, params, refit=False, cv=3, scoring='accuracy')
+
+gs.fit(X, y)
+print(gs.best_score_, gs.best_params_)
