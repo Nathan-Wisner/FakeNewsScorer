@@ -25,6 +25,9 @@ The main premise of this bot is that it will post a status update about the prob
 This is done by running the bot in a continous polling loop backed by a SQLite database to keep an index of already tweeted articles as
 well as statitics.
 
+[Repo before it was moved here](https://github.com/Brandon-Davison/Fake_news_bot)
+
+
 #### Website/Fake-news-check-master
 
 Contains a ReactJS website which displays the bot's Twitter feed along with text boxes which are intended to check articles directly 
@@ -32,6 +35,8 @@ from the site. More importnatly, the website is inteded to display analytics on 
 
 The backend is running off NodeJS, Mongoose, and Express but wasn't fully implemented. Additional time was spent deploying the website 
 onto AWS 
+
+[Up to date repo](https://github.com/Brandon-Davison/Fake-news-check)
 
 ## Deployment
 
