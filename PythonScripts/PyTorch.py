@@ -4,6 +4,22 @@ import torchtext
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.utils.data import DataLoader
+import time
+from torch.utils.data.dataset import random_split
+
+import torch
+import torchtext
+from torchtext.datasets import text_classification
+NGRAMS = 2
+import os
+if not os.path.isdir('./.data'):
+    os.mkdir('./.data')
+#train_dataset, test_dataset = text_classification.DATASETS['AG_NEWS'](
+#   root='./.data', ngrams=NGRAMS, vocab=None)
+BATCH_SIZE = 16
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 pRealTrain = []
 pFakeTrain = []
@@ -60,57 +76,47 @@ def printSize(list):
 parseFiles()
 pTrainList, pTestList = torch.utils.data.random_split(pList, [756, 300])
 printSize(gList)
-gTrainList, gTestList = torch.utils.data.random_split(gList, [18000, 4140])
+train_dataset, test_dataset = torch.utils.data.random_split(gList, [18000, 4140])
 
 
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
-
-    def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 16 * 5 * 5)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
-
-net = Net()
-
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+import numpy as np
+from sklearn.datasets import make_classification
+from torch import nn
+import torch.nn.functional as F
+from skorch import NeuralNetClassifier
 
 
-def trainModel():
-    for epoch in range(2):  # loop over the dataset multiple times
+X, y = make_classification(1000, 20, n_informative=10, random_state=0)
+print(X)
+print(y)
+X = X.astype(np.float32)
+y = y.astype(np.int64)
 
-        running_loss = 0.0
-        for i, data in enumerate(pRealTrain, 0):
-            # get the inputs; data is a list of [inputs, labels]
-            inputs, labels = data
+class MyModule(nn.Module):
+    def __init__(self, num_units=10, nonlin=F.relu):
+        super(MyModule, self).__init__()
 
-            # zero the parameter gradients
-            optimizer.zero_grad()
+        self.dense0 = nn.Linear(20, num_units)
+        self.nonlin = nonlin
+        self.dropout = nn.Dropout(0.5)
+        self.dense1 = nn.Linear(num_units, 10)
+        self.output = nn.Linear(10, 2)
 
-            # forward + backward + optimize
-            outputs = net(inputs)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
+    def forward(self, X, **kwargs):
+        X = self.nonlin(self.dense0(X))
+        X = self.dropout(X)
+        X = F.relu(self.dense1(X))
+        X = F.softmax(self.output(X))
+        return X
 
-            # print statistics
-            running_loss += loss.item()
-            if i % 2000 == 1999:  # print every 2000 mini-batches
-                print('[%d, %5d] loss: %.3f' %
-                      (epoch + 1, i + 1, running_loss / 2000))
-                running_loss = 0.0
 
-    print('Finished Training')
-trainModel()
+net = NeuralNetClassifier(
+    MyModule,
+    max_epochs=10,
+    lr=0.1,
+    # Shuffle training data on each epoch
+    iterator_train__shuffle=True,
+)
+
+net.fit(X, y)
+y_proba = net.predict_proba(X)

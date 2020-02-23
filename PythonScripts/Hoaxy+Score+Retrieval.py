@@ -158,18 +158,9 @@ def main(headline, URL):
     print(getHeadlineScore(headline))
     
 URL = "https://www.infowars.com/caught-meryl-streep-applauds-pizzagate-pedophile/"
-headline = "CAUGHT! MERYL STREEP APPLAUDS PIZZAGATE PEDOPHILE"
+headline = getHeadline(URL)
     
 main(headline, URL)
-
-# In[1]:
-
-
-    
-    
-
-
-# In[ ]:
 
 
 
