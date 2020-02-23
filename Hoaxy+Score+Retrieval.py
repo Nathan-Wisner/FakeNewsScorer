@@ -1,51 +1,21 @@
 
 # coding: utf-8
 
-# In[6]:
-
-import requests
-
-url = "https://api-hoaxy.p.rapidapi.com/tweets"
-
-querystring = {"ids":"%5B29317%2C 68363%5D"}
-
-headers = {
-    'x-rapidapi-host': "api-hoaxy.p.rapidapi.com",
-    'x-rapidapi-key': "8bd7508073mshe5c51e555173ee1p1a803ajsnebd7566cb65b"
-    }
-
-response = requests.request("GET", url, headers=headers, params=querystring)
-
-print(response.text)
-
-
-# In[7]:
-
-import http.client
-
-conn = http.client.HTTPSConnection("api-hoaxy.p.rapidapi.com")
-
-headers = {
-    'x-rapidapi-host': "api-hoaxy.p.rapidapi.com",
-    'x-rapidapi-key': "8bd7508073mshe5c51e555173ee1p1a803ajsnebd7566cb65b"
-    }
-
-conn.request("GET", "/tweets?ids=%255B29317%252C%2068363%255D", headers=headers)
-
-res = conn.getresponse()
-data = res.read()
-
-print(data.decode("utf-8"))
-
-
-# In[155]:
+# In[228]:
 
 import http.client
 import json
+from urllib.parse import urlparse
+
 
 conn = http.client.HTTPSConnection("api-hoaxy.p.rapidapi.com")
 
-headers = {
+verifyHeaders = {
+    'x-rapidapi-host': "adverifai-api.p.rapidapi.com",
+    'x-rapidapi-key': "8bd7508073mshe5c51e555173ee1p1a803ajsnebd7566cb65b"
+    }
+
+hoaxiHeaders = {
     'x-rapidapi-host': "api-hoaxy.p.rapidapi.com",
     'x-rapidapi-key': "8bd7508073mshe5c51e555173ee1p1a803ajsnebd7566cb65b"
     }
@@ -88,32 +58,79 @@ def getHeadlineScore(title):
     title = title.replace("_", "+")
     title = title.replace("-", "+")
 
-    conn.request("GET", "/articles?sort_by=relevant&use_lucene_syntax=false&query=" + title, headers=headers)
+    conn.request("GET", "/articles?sort_by=relevant&use_lucene_syntax=false&query=" + title, headers=hoaxiHeaders)
 
     res = conn.getresponse()
     data = res.read()
     JSON = json.loads(data.decode("utf-8"))
     getMean(JSON)
     printScores(JSON)
-getHeadlineScore("Moon landing")
 
+#Finds fact checking for the article or similar articles
+def createCheckUpdate(headline):
+    checkUrl = "https://adverifai-api.p.rapidapi.com/fact_check"
+    checkQuerystring = {"headline": headline}
+    checkResponse = requests.request("GET", checkUrl, headers=verifyHeaders, params=checkQuerystring)
+    checkData = checkResponse.text
+    checkJSON = json.loads(checkData)
+    printCheckInformation(checkJSON)
 
-# In[94]:
+def printCheckInformation(checkJSON):
+    for item in (checkJSON["fakeRef"]):
+        print(item["title"] + " found on " + item["domain"])
+        print(getVerifyScore(item["score"]) + "% fake probability")
+        print()
+    
+#Finds the score given by adverifi for the given claim
+def createScoreUpdate(headline):
+    scoreUrl = "https://adverifai-api.p.rapidapi.com/fake_ref"
+    scoreQuerystring = {"headline":headline}
+    scoreResponse = requests.request("GET", scoreUrl, headers=verifyHeaders, params=scoreQuerystring)
+    scoreData = scoreResponse.text
+    scoreJSON = json.loads(scoreData)
+    printCheckInformation(scoreJSON)
 
-import requests
+#Finds the descriptions for the domain to check if it is a source of any suspision
+def createDescriptUpdate(URL):
+    descUrl = "https://adverifai-api.p.rapidapi.com/source_check"
+    descQuerystring = {"url":URL}
+    descResponse = requests.request("GET", descUrl, headers=verifyHeaders, params=descQuerystring)
+    descData = descResponse.text
+    descJSON = json.loads(descData)
+    printDescription(descJSON)
+    
+def printDescription(descJSON):
+    descList = list(descJSON["fakeDescription"].split(','))
+    
+    for item in descList:
+        item = item.replace(" ", "")
+        print(item)
+    
+def getDomain(URL):
+    parsed_uri = urlparse(URL)
+    result = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
+    return result
 
-url = "https://api-hoaxy.p.rapidapi.com/latest-articles"
-
-querystring = {"domains":'[infowars.com]',"past_hours":"100"}
-
-headers = {
-    'x-rapidapi-host': "api-hoaxy.p.rapidapi.com",
-    'x-rapidapi-key': "8bd7508073mshe5c51e555173ee1p1a803ajsnebd7566cb65b"
-    }
-
-response = requests.request("GET", url, headers=headers, params=querystring)
-
-print(response.text)
+def getVerifyScore(score):
+    score = int(score)
+    score = score / 10
+    result = str(round(score, 2))
+    return result
+    
+def main():
+    URL = "https://www.infowars.com/caught-meryl-streep-applauds-pizzagate-pedophile/"
+    headline = "CAUGHT! MERYL STREEP APPLAUDS PIZZAGATE PEDOPHILE"
+    
+    print("Related fact checked articles")
+    createCheckUpdate(headline)
+    print()
+    print("This headline was found at these websites: ")
+    createScoreUpdate(headline)
+    print()
+    print(getDomain(URL) + " is known for the following: ")
+    createDescriptUpdate(URL)
+    
+main()
 
 
 # In[96]:
@@ -121,14 +138,4 @@ print(response.text)
 get_ipython().system('pip install torch===1.4.0 torchvision===0.5.0 -f https://download.pytorch.org/whl/torch_stable.html')
     
 import torch
-
-
-# In[98]:
-
-import torch, torchtext
-
-
-# In[ ]:
-
-
 
