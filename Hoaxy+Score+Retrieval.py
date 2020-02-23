@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[29]:
+# In[40]:
 
 import http.client
 import json
@@ -23,17 +23,29 @@ hoaxiHeaders = {
 
 def categorizeScore(score, median):
     if(score < median - (median) * .03):
-        return "Likely True"
+        return 40 + score / median
     if (score > median - (median * .01) and score < median):
-        return "Possibly True"
+        return 45 + score / median
     if (score > median + (median) and score < median + (median * .01)):
-        return "Possibly False"
+        return 75 + score / median
     if (score > median + (median * .02) and score < median + (median * .4)):
-        return "Likely False"
+        return 80 + score / median
     elif (score < median + (median * .4)):
-        return "Very Likely False"
+        return 85 + score / median
     else:
-        return "False"
+        return 90 + score / median
+    
+def categorizeMedian(median):
+    if(median < 50):
+        return median
+    if (median > 50 and median < 85):
+        return 45
+    if (median > 100 and median < 150):
+        return 65
+    if (median > 150 and median < 200):
+        return 85
+    if(median > 200):
+        return 92
 
 def getMean(JSON):
     counter = 0
@@ -64,7 +76,8 @@ def getHeadlineScore(title):
     res = conn.getresponse()
     data = res.read()
     JSON = json.loads(data.decode("utf-8"))
-    return getMean(JSON)
+    mean = getMean(JSON)
+    return categorizeMedian(mean)
     
 
 #Finds fact checking for the article or similar articles
@@ -123,7 +136,10 @@ def getRoundedScore(score):
     return result
     
 def getVerifyScore(headline, URL):
-    return createScoreUpdate(headline, URL) 
+    score = createScoreUpdate(headline, URL)
+    if ( score > 100 ):
+        score = 99.9
+    return score
     
 def main(headline, URL):
     
@@ -136,6 +152,7 @@ def main(headline, URL):
     #print(getDomain(URL) + " is known for the following: ")
     #createDescriptUpdate(headline, URL)
     print(getVerifyScore(headline, URL))
+    print(getHeadlineScore(headline))
     
 URL = "https://www.infowars.com/caught-meryl-streep-applauds-pizzagate-pedophile/"
 headline = "CAUGHT! MERYL STREEP APPLAUDS PIZZAGATE PEDOPHILE"
@@ -143,9 +160,14 @@ headline = "CAUGHT! MERYL STREEP APPLAUDS PIZZAGATE PEDOPHILE"
 main(headline, URL)
 
 
-# In[ ]:
+# In[39]:
 
 get_ipython().system('pip install torch===1.4.0 torchvision===0.5.0 -f https://download.pytorch.org/whl/torch_stable.html')
     
 import torch
+
+
+# In[ ]:
+
+
 
