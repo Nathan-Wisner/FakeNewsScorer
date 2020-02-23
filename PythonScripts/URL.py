@@ -1,6 +1,6 @@
 from newspaper import Article
 
-def getHeadline():
+def getHeadline(url):
     article = Article(url)
     article.download()
     article.parse()

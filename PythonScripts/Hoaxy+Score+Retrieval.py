@@ -10,6 +10,7 @@ import pandas as pd
 import torch
 import torchtext
 from urllib.parse import urlparse
+from URL import getHeadline
 
 
 conn = http.client.HTTPSConnection("api-hoaxy.p.rapidapi.com")
@@ -66,7 +67,6 @@ def printScores(JSON):
         print(item["title"])
         print(categorizeScore(item["score"], mean))
         print()
-        #print(item["score"])
 
 def getHeadlineScore(title):
 
@@ -95,12 +95,8 @@ def createCheckUpdate(headline, URL):
 def printCheckInformation(checkJSON, URL, headline):
     maxScore = []
     for item in (checkJSON["fakeRef"]):
-        #print(item["title"] + " found on " + item["domain"])
-        itemScore = float(getRoundedScore(item["score"])) + float(len(createDescriptUpdate(headline, URL))* 10)
-        #print(str(itemScore) + "% fake probability")
-        #print()
+        itemScore = float(getRoundedScore(item["score"])) + float(len(createDescriptUpdate(headline, URL)[0]) * 10)
         maxScore.append(itemScore)
-    #print(maxScore)
     return max(maxScore)
         
     
@@ -144,23 +140,20 @@ def getVerifyScore(headline, URL):
         score = 99.9
     return score
     
-def main(headline, URL):
+def main(URL):
+
+    headline = getHeadline(URL)
+    verifyScore = getVerifyScore(headline, URL)
+    hoaxyScore = getHeadlineScore(headline)
+    print(verifyScore)
+    print(hoaxyScore)
+
+    return (hoaxyScore + verifyScore) / 2
     
-    #print("Related fact checked articles")
-    #createCheckUpdate(headline, URL)
-    #print()
-    #print("This headline was found at these websites: ")
-    #createScoreUpdate(headline, URL)
-    #print()
-    #print(getDomain(URL) + " is known for the following: ")
-    #createDescriptUpdate(headline, URL)
-    print(getVerifyScore(headline, URL))
-    print(getHeadlineScore(headline))
+URL = "https://www.infowars.com/pizzagate-the-bigger-picture/"
+
     
-URL = "https://www.infowars.com/caught-meryl-streep-applauds-pizzagate-pedophile/"
-headline = getHeadline(URL)
-    
-main(headline, URL)
+print(main(URL))
 
 
 
