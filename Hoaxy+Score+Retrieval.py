@@ -1,10 +1,11 @@
 
 # coding: utf-8
 
-# In[228]:
+# In[29]:
 
 import http.client
 import json
+import requests
 from urllib.parse import urlparse
 
 
@@ -63,77 +64,86 @@ def getHeadlineScore(title):
     res = conn.getresponse()
     data = res.read()
     JSON = json.loads(data.decode("utf-8"))
-    getMean(JSON)
-    printScores(JSON)
+    return getMean(JSON)
+    
 
 #Finds fact checking for the article or similar articles
-def createCheckUpdate(headline):
+def createCheckUpdate(headline, URL):
     checkUrl = "https://adverifai-api.p.rapidapi.com/fact_check"
     checkQuerystring = {"headline": headline}
     checkResponse = requests.request("GET", checkUrl, headers=verifyHeaders, params=checkQuerystring)
     checkData = checkResponse.text
     checkJSON = json.loads(checkData)
-    printCheckInformation(checkJSON)
+    printCheckInformation(checkJSON, URL, headline)
 
-def printCheckInformation(checkJSON):
+def printCheckInformation(checkJSON, URL, headline):
+    maxScore = []
     for item in (checkJSON["fakeRef"]):
-        print(item["title"] + " found on " + item["domain"])
-        print(getVerifyScore(item["score"]) + "% fake probability")
-        print()
+        #print(item["title"] + " found on " + item["domain"])
+        itemScore = float(getRoundedScore(item["score"])) + float(len(createDescriptUpdate(headline, URL))* 10)
+        #print(str(itemScore) + "% fake probability")
+        #print()
+        maxScore.append(itemScore)
+    #print(maxScore)
+    return max(maxScore)
+        
     
 #Finds the score given by adverifi for the given claim
-def createScoreUpdate(headline):
+def createScoreUpdate(headline, URL):
     scoreUrl = "https://adverifai-api.p.rapidapi.com/fake_ref"
     scoreQuerystring = {"headline":headline}
     scoreResponse = requests.request("GET", scoreUrl, headers=verifyHeaders, params=scoreQuerystring)
     scoreData = scoreResponse.text
     scoreJSON = json.loads(scoreData)
-    printCheckInformation(scoreJSON)
+    return printCheckInformation(scoreJSON, URL, headline)
+    
 
 #Finds the descriptions for the domain to check if it is a source of any suspision
-def createDescriptUpdate(URL):
+def createDescriptUpdate(headline, URL):
     descUrl = "https://adverifai-api.p.rapidapi.com/source_check"
     descQuerystring = {"url":URL}
     descResponse = requests.request("GET", descUrl, headers=verifyHeaders, params=descQuerystring)
     descData = descResponse.text
     descJSON = json.loads(descData)
-    printDescription(descJSON)
+    return list(descJSON)
     
 def printDescription(descJSON):
-    descList = list(descJSON["fakeDescription"].split(','))
-    
-    for item in descList:
-        item = item.replace(" ", "")
-        print(item)
+    descList = list(descJSON)
+    return descList
     
 def getDomain(URL):
     parsed_uri = urlparse(URL)
     result = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
     return result
 
-def getVerifyScore(score):
+def getRoundedScore(score):
     score = int(score)
     score = score / 10
     result = str(round(score, 2))
     return result
     
-def main():
-    URL = "https://www.infowars.com/caught-meryl-streep-applauds-pizzagate-pedophile/"
-    headline = "CAUGHT! MERYL STREEP APPLAUDS PIZZAGATE PEDOPHILE"
+def getVerifyScore(headline, URL):
+    return createScoreUpdate(headline, URL) 
     
-    print("Related fact checked articles")
-    createCheckUpdate(headline)
-    print()
-    print("This headline was found at these websites: ")
-    createScoreUpdate(headline)
-    print()
-    print(getDomain(URL) + " is known for the following: ")
-    createDescriptUpdate(URL)
+def main(headline, URL):
     
-main()
+    #print("Related fact checked articles")
+    #createCheckUpdate(headline, URL)
+    #print()
+    #print("This headline was found at these websites: ")
+    #createScoreUpdate(headline, URL)
+    #print()
+    #print(getDomain(URL) + " is known for the following: ")
+    #createDescriptUpdate(headline, URL)
+    print(getVerifyScore(headline, URL))
+    
+URL = "https://www.infowars.com/caught-meryl-streep-applauds-pizzagate-pedophile/"
+headline = "CAUGHT! MERYL STREEP APPLAUDS PIZZAGATE PEDOPHILE"
+    
+main(headline, URL)
 
 
-# In[96]:
+# In[ ]:
 
 get_ipython().system('pip install torch===1.4.0 torchvision===0.5.0 -f https://download.pytorch.org/whl/torch_stable.html')
     
